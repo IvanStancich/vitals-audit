@@ -1,0 +1,44 @@
+{
+  "$schema": "vitals-manifest-v1",
+  "agent": "my-agent",
+  "required_files": [
+    "IDENTITY.md",
+    "SOUL.md"
+  ],
+  "required_dirs": [
+    "memory"
+  ],
+  "monitored_files": [
+    {
+      "path": "BRAND_VOICE.md",
+      "description": "alert if brand voice definition changes unexpectedly"
+    }
+  ],
+  "cross_pollination": {
+    "reads_from": ["~/.openclaw/workspace/memory"],
+    "writes_to": ["memory/strategy/insights.json"]
+  },
+  "health_signals": [
+    {
+      "type": "file_freshness",
+      "path": "memory/strategy/*.md",
+      "max_stale_days": 30,
+      "severity": "warn",
+      "description": "strategy docs should be updated monthly"
+    },
+    {
+      "type": "dir_activity",
+      "path": "memory/content-log",
+      "max_gap_days": 5,
+      "severity": "warn",
+      "description": "content pipeline stalled if no new entries"
+    },
+    {
+      "type": "file_max_size_kb",
+      "path": "MEMORY.md",
+      "max_kb": 50,
+      "severity": "warn",
+      "description": "MEMORY.md getting too large"
+    }
+  ]
+}
