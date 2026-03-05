@@ -42,17 +42,7 @@ RELATIONSHIP_ISLAND_EXCEPTIONS = {
     "areas/people/example-person",
 }
 REQUIRED_FACT_FIELDS = {"id", "fact", "category", "timestamp", "source", "status", "lastAccessed", "accessCount"}
-KNOWN_MODELS = {
-    "gpt-4.1",
-    "gpt-4.1-mini",
-    "gpt-4.1-nano",
-    "gpt-5",
-    "gpt-5-mini",
-    "gpt-5-nano",
-    "opus",
-    "claude-opus-4",
-    "o3",
-}
+KNOWN_MODELS: set = set()  # auto-discovered from openclaw.json at runtime
 
 
 class VitalsAuditor:
@@ -64,6 +54,7 @@ class VitalsAuditor:
         self.agents = self._discover_agents()
         self.agents_by_id = {a["id"]: a for a in self.agents}
         self.discovery = self._build_discovery_payload()
+        self.known_models = self._discover_models()
         self.manifests = self._load_manifests()
         self.categories: Dict[str, Dict[str, Any]] = {}
         self.stats: Dict[str, Any] = {
@@ -247,6 +238,34 @@ class VitalsAuditor:
             "config_source": str(CONFIG_PATH),
             "warnings": self.discovery_warnings,
         }
+
+    def _discover_models(self) -> set:
+        """Auto-discover configured models from openclaw.json."""
+        models: set = set()
+        data, err = self._load_config()
+        if err or not isinstance(data, dict):
+            return models
+        def _extract(obj: Any) -> None:
+            if isinstance(obj, str) and "/" in obj:
+                models.add(obj)
+            elif isinstance(obj, dict):
+                for key in ("default", "primary", "model"):
+                    if isinstance(obj.get(key), str):
+                        _extract(obj[key])
+                for key in ("fallbacks",):
+                    if isinstance(obj.get(key), list):
+                        for item in obj[key]:
+                            _extract(item)
+            elif isinstance(obj, list):
+                for item in obj:
+                    _extract(item)
+        agents_cfg = data.get("agents", {})
+        defaults = agents_cfg.get("defaults", {})
+        _extract(defaults.get("model"))
+        for agent in agents_cfg.get("list", []):
+            if isinstance(agent, dict):
+                _extract(agent.get("model"))
+        return models
 
     def _load_manifest(self, agent: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         path = agent["workspace"] / "vitals.json"
@@ -1020,17 +1039,19 @@ class VitalsAuditor:
         return "pass", "one-shot cleanup ok", None
 
     def _c_model_valid(self):
+        if not self.known_models:
+            return "warn", "no models discovered from config", None
         by = self._cron_by_name()
         if not by:
             return "warn", "cron unavailable", None
         bad = []
         for n, c in by.items():
             model = str(c.get("model", "")).strip()
-            if model and model not in KNOWN_MODELS:
+            if model and model not in self.known_models:
                 bad.append(f"{n}:{model}")
         if bad:
             return "warn", f"unknown models: {', '.join(bad[:5])}", None
-        return "pass", "cron models valid", None
+        return "pass", f"cron models valid ({len(self.known_models)} configured)", None
 
     # 6) SKILLS VALIDATION
     def skills_checks(self, category: str) -> None:
