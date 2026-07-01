@@ -96,6 +96,12 @@ Drop a `vitals.json` in any agent's workspace for custom health checks:
 }
 ```
 
+Plugin and packaged-skill repos can use the same manifest format to watch
+public release surfaces. See
+[`examples/tweetclaw-vitals.json`](examples/tweetclaw-vitals.json) for an
+OpenClaw plugin example that keeps README, skill, manifest, setup docs, and
+release notes present and fresh.
+
 ## Fix mode
 
 The skill has two modes:
