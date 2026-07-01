@@ -1,0 +1,58 @@
+{
+  "$schema": "vitals-manifest-v1",
+  "agent": "tweetclaw-plugin",
+  "required_files": [
+    "README.md",
+    "openclaw.plugin.json",
+    "skills/tweetclaw/SKILL.md",
+    "docs/openclaw-setup.md"
+  ],
+  "required_dirs": [
+    "docs",
+    "skills"
+  ],
+  "monitored_files": [
+    {
+      "path": "README.md",
+      "description": "alert when public install or positioning guidance changes"
+    },
+    {
+      "path": "openclaw.plugin.json",
+      "description": "alert when OpenClaw plugin metadata or permissions change"
+    },
+    {
+      "path": "skills/tweetclaw/SKILL.md",
+      "description": "alert when packaged skill instructions change"
+    }
+  ],
+  "health_signals": [
+    {
+      "type": "file_contains",
+      "path": "README.md",
+      "pattern": "OpenClaw|ClawHub",
+      "severity": "warn",
+      "description": "public docs should keep the OpenClaw install path visible"
+    },
+    {
+      "type": "file_contains",
+      "path": "skills/tweetclaw/SKILL.md",
+      "pattern": "confirm|approval|permission",
+      "severity": "warn",
+      "description": "account-changing workflows should keep approval language visible"
+    },
+    {
+      "type": "file_freshness",
+      "path": "docs/clawpack-release.md",
+      "max_stale_days": 30,
+      "severity": "warn",
+      "description": "release notes should be refreshed during active plugin work"
+    },
+    {
+      "type": "file_max_size_kb",
+      "path": "docs/discoverability-audit.md",
+      "max_kb": 15,
+      "severity": "warn",
+      "description": "compact audit memory should stay under the public-surface budget"
+    }
+  ]
+}
